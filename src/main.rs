@@ -16,7 +16,12 @@
 use std::env;
 use std::process;
 
-const CHAR_LIST: [&str; 16] = [ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F" ];
+const CHAR_LIST: [&str; 36] = [
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+    "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
+    "U", "V", "W", "X", "Y", "Z"
+];
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -59,7 +64,7 @@ fn main() {
 }
 
 fn parse_base_input(input: &String) -> i32 {
-    match input.to_lowercase().as_str() {
+    let result = match input.to_lowercase().as_str() {
         "hex" => 16,
         "dec" => 10,
         "oct" => 8,
@@ -73,7 +78,14 @@ fn parse_base_input(input: &String) -> i32 {
                 }
             }
         }
+    };
+
+    if result < 2 || result > 36 {
+        println!("Error: Cannot convert from or to a number system with a base of {}.", input);
+        process::exit(1);
     }
+
+    return result;
 }
 
 fn to_dec(input: &Vec<i32>, base: i32) -> i32 {
