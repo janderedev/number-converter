@@ -13,8 +13,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::env;
-use std::process;
+use std::{process};
+use clap::{Arg, App};
 
 const CHAR_LIST: [&str; 36] = [
     "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
@@ -23,41 +23,50 @@ const CHAR_LIST: [&str; 36] = [
     "U", "V", "W", "X", "Y", "Z"
 ];
 
+const GRAY: &str = "\u{001b}[30;1m";
+const RESET: &str = "\u{001b}[0m";
+
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let matches = App::new("Base converter thingy")
+        .version("1.2")
+        .arg(Arg::with_name("INNUM")
+             .help("The number that you want to convert to a different number system")
+             .required(true)
+             .value_name("Input number")
+             .index(1))
+        .arg(Arg::with_name("INSYS")
+             .help("The number system that the input uses")
+             .required(true)
+             .value_name("Input system")
+             .index(2))
+        .arg(Arg::with_name("OUTSYS")
+             .help("The number system that you want to convert the input to")
+             .required(true)
+             .value_name("Output system")
+             .index(3))
+        .arg(Arg::with_name("VERBOSE")
+             .short("v")
+             .long("verbose")
+             .value_name("BOOLEAN")
+             .help("Enables verbose output which you can copypaste into a document")
+             .takes_value(false))
+        .get_matches();
 
-    if args.len() <= 1 {
-        println!("\u{001b}[1mUsage:\u{001b}[0m \u{001b}[36m{} [Input number] [Input type] [Output type]\u{001b}[0m", args[0]);
-        print!("Input and output type can be any of ");
-        print!("\u{001b}[33m\"hex\"\u{001b}[0m, \u{001b}[33m\"dec\"\u{001b}[0m, \u{001b}[33m\"oct\"\u{001b}[0m, \u{001b}[33m\"bin\"\u{001b}[0m ");
-        println!("or any number from 2 to 16.");
-        println!("\u{001b}[1mExample:\u{001b}[0m \u{001b}[36m{} DCEF hex bin\u{001b}[0m", args[0]);
-        process::exit(1);
-    }
-
-    if args.len() < 4 {
-        println!("Expected 3 arguments; received {}.", args.len() - 1);
-        process::exit(1);
-    }
-
-    if args.len() > 4 {
-        println!("Expected 3 arguments; received {}. Additional arguments have been discarded.", args.len() - 1);
-    }
-
-    let in_str = &args[1].to_uppercase();
-    let in_type = &args[2];
-    let out_type = &args[3];
+    let in_str = &matches.value_of("INNUM").unwrap().to_string();
+    let in_type = &matches.value_of("INSYS").unwrap().to_string();
+    let out_type = &matches.value_of("OUTSYS").unwrap().to_string();
+    let verbose = matches.is_present("VERBOSE");
     let in_base = parse_base_input(in_type);
     let out_base = parse_base_input(out_type);
 
-    let in_as_dec = to_dec(&str_to_vec(in_str), in_base);
+    let in_as_dec = to_dec(&str_to_vec(in_str), in_base, verbose);
 
     if out_base == 10 {
         println!("{} (Base {}) => {}", in_str, in_base, in_as_dec);
         process::exit(0);
     }
 
-    let out_vec = to_other(&in_as_dec, out_base);
+    let out_vec = to_other(&in_as_dec, out_base, verbose);
     let output = to_str(&out_vec);
 
     println!("{} (Base {}) => {} => {} (Base {})", in_str, in_base, in_as_dec, output, out_base);
@@ -88,26 +97,71 @@ fn parse_base_input(input: &String) -> i32 {
     return result;
 }
 
-fn to_dec(input: &Vec<i32>, base: i32) -> i32 {
+fn to_dec(input: &Vec<i32>, base: i32, verbose: bool) -> i32 {
     let mut output: i32 = 0;
     let mut j: i32 = 0;
 
+    if verbose {
+        println!("Converting {} (Base {}) to decimal", to_str(input), base);
+    }
+
     for i in 0..input.len() {
-        output += input[i] * num::pow(base, j as usize);
+        if verbose {
+            print!("{}", GRAY);
+            if i == 0 {
+                print!("{} = ", to_str(input));
+            } else {
+                for _ in 0..to_str(input).len() as i32 + 1 { print!(" "); }
+                print!("+ ");
+            }
+
+            print!("{}*{}^{}", input[i], base, j);
+        };
+
+        let add_to_output = input[i] * num::pow(base, j as usize);
         j += 1;
+
+        if verbose {
+            println!(" = {}", add_to_output);
+            print!("{}", RESET);
+        }
+
+        output += add_to_output;
     };
+
+    if verbose {
+        println!("= {} (Base 10)\n", output);
+    }
 
     return output;
 }
 
-fn to_other(input: &i32, base: i32) -> Vec<i32> {
+fn to_other(input: &i32, base: i32, verbose: bool) -> Vec<i32> {
     let mut output: Vec<i32> = Vec::new();
     let mut i = input.clone();
 
+    if verbose {
+        println!("Converting {} to Base {}", input, base);
+    }
+
     while i > 0 {
+        if verbose {
+            print!("{}", GRAY);
+            print!("{}", i);
+            for _ in 0..input.to_string().len() as i32 - i.to_string().len() as i32 { print!(" "); }
+            print!(" / {} = {}", base, i / base);
+            for _ in 0..(input / base).to_string().len() as i32 - (i / base).to_string().len() as i32 + 1 { print!(" "); }
+            println!("Rest {}",  i % base);
+            print!("{}", RESET);
+        };
+
         let rest = i % base;
         i = i / base;
         output.push(rest);
+    }
+
+    if verbose {
+        println!("= {} (Base {})\n", to_str(&output), base);
     }
 
     return output;
