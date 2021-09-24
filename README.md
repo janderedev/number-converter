@@ -7,10 +7,7 @@ I had to do this manually for the last 2 weeks in school, and I was bored so I d
 ## Usage
 
 ```bash
-$ ./num-converter
-Usage: ./num-converter [Input number] [Input type] [Output type]
-Input and output type can be any of "hex", "dec", "oct", "bin" or any number from 2 to 16.
-Example: ./num-converter DCEF hex bin
+./num-converter --help
 ```
 
 ## Download
